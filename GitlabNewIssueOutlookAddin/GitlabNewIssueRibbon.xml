@@ -1,0 +1,24 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad="Ribbon_Load">
+  <ribbon>
+    <tabs>
+      <tab idMso="TabAddIns">
+        <group id="GitlabNewIssueGroup"
+               label="Gitlab">
+          <button id="GitlabNewIssueSettingsButton"
+                  label="settings"
+                  size="large"
+                  onAction="OpenSettings"/>
+        </group>
+      </tab>
+    </tabs>
+  </ribbon>
+  <contextMenus>
+    <contextMenu idMso="ContextMenuMailItem">      
+      <dynamicMenu id="GitlabNewIssueMenu"
+                   label="Create Gitlab Issue"
+                   getContent="PopulateMenu"></dynamicMenu>
+    </contextMenu>
+  </contextMenus>
+</customUI>
+
