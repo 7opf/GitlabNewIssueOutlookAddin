@@ -44,7 +44,7 @@ namespace GitlabNewIssueOutlookAddin {
         #region IRibbonExtensibility Members
 
         public string GetCustomUI(string ribbonID) {
-            return GetResourceText("GitlabNewIssueOutlookAddin.Ribbon1.xml");
+            return GetResourceText("GitlabNewIssueOutlookAddin.GitlabNewIssueRibbon.xml");
         }
 
         #endregion
@@ -63,6 +63,7 @@ namespace GitlabNewIssueOutlookAddin {
         }
 
         public String PopulateMenu(Office.IRibbonControl control) {
+            Debug.WriteLine(GetMenuXML(this.projects));
             return GetMenuXML(this.projects);
         }
 
@@ -72,7 +73,7 @@ namespace GitlabNewIssueOutlookAddin {
 
             if (control.Context is Outlook.Selection) {
                 Outlook.Selection sel = control.Context as Outlook.Selection;
-                mail = sel[0];
+                mail = sel[1];
             }
 
             if (control.Context is Outlook.MailItem) {
@@ -90,7 +91,7 @@ namespace GitlabNewIssueOutlookAddin {
                 labels = "To Do"
             };
 
-            this.gitlabApi.newIssue(Int32.Parse(control.Id), issue);
+            this.gitlabApi.newIssue(Int32.Parse(control.Tag), issue);
         }
 
         #endregion
@@ -113,13 +114,13 @@ namespace GitlabNewIssueOutlookAddin {
         }
 
         public String GetMenuXML(GitlabSimpleProject[] projects) {
-            return $@"<menu description=""Create an issue from this email on Gitlab"" id=""GitlabIssueContextMenu"" label=""Create Gitlab Issue"">{projects.Select(GetButtonXML)}</menu>";
+            return $@"<menu xmlns=""http://schemas.microsoft.com/office/2006/01/customui"">{String.Join("", projects.Select(GetButtonXML))}</menu>";
         }
 
         public String GetButtonXML(GitlabSimpleProject project) {
-            return $@"<button id=""{project.id}"" label=""{project.name}"" tag=""{project.name}"" onAction=""SubmitIssue"" />";
+            return $@"<button id=""project{project.id}"" label=""{project.name}"" tag=""{project.id}"" onAction=""SubmitIssue"" />";
         }
-
+        
         #endregion
     }
 }
