@@ -91,7 +91,11 @@ namespace GitlabNewIssueOutlookAddin {
                 labels = "To Do"
             };
 
-            this.gitlabApi.newIssue(Int32.Parse(control.Tag), issue);
+            GitlabIssue createdIssue = this.gitlabApi.newIssue(Int32.Parse(control.Tag), issue);
+            DialogResult result = MessageBox.Show($"View on Gitlab?", "Issue Created", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (result == DialogResult.Yes) {
+                Process.Start(createdIssue.web_url);
+            }
         }
 
         #endregion
@@ -114,11 +118,14 @@ namespace GitlabNewIssueOutlookAddin {
         }
 
         public String GetMenuXML(GitlabSimpleProject[] projects) {
+            if (projects == null) {
+                return @"<menu xmlns=""http://schemas.microsoft.com/office/2006/01/customui""><button id=""button1"" label=""No projects available"" disabled=""true"" /></menu>";
+            }
             return $@"<menu xmlns=""http://schemas.microsoft.com/office/2006/01/customui"">{String.Join("", projects.Select(GetButtonXML))}</menu>";
         }
 
         public String GetButtonXML(GitlabSimpleProject project) {
-            return $@"<button id=""project{project.id}"" label=""{project.name}"" tag=""{project.id}"" onAction=""SubmitIssue"" />";
+            return $@"<button id=""project{project.id}"" label=""{project.name_with_namespace}"" tag=""{project.id}"" onAction=""SubmitIssue"" />";
         }
         
         #endregion

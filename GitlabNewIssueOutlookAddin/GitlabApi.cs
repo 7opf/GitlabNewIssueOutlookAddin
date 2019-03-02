@@ -18,24 +18,25 @@ namespace GitlabNewIssueOutlookAddin {
             rc.AddDefaultHeader("PRIVATE-TOKEN", "");
         }
 
-        public void newIssue(int projectId, GitlabNewIssue newIssue) {
+        public GitlabIssue newIssue(int projectId, GitlabNewIssue newIssue) {
             RestRequest req = new RestRequest("projects/{projectId}/issues");
             req.AddParameter("projectId", projectId, ParameterType.UrlSegment);
             req.AddJsonBody(@newIssue);
 
             try {
-                var response = rc.Post(req);
+                var response = rc.Post<GitlabIssue>(req);
                 Debug.WriteLine(response.Content);
 
-                if (response.StatusCode == System.Net.HttpStatusCode.OK) {
-                    MessageBox.Show("Success!");
-                } else {
-                    MessageBox.Show("Failed: " + response.Content);
+                if (response.StatusCode != System.Net.HttpStatusCode.Created) {
+                    MessageBox.Show("Failed to create issue: " + response.Content);
+                    return null;
                 }
 
+                return response.Data;
             } catch (Exception e) {
                 Debug.WriteLine(e);
                 MessageBox.Show(e.Message);
+                return null;
             }
 
         }
@@ -55,7 +56,7 @@ namespace GitlabNewIssueOutlookAddin {
 
                 if (response.StatusCode != System.Net.HttpStatusCode.OK) {
                     MessageBox.Show("Failed to fetch Gitlab project list: " + response.Content);
-                    return new List<GitlabSimpleProject>();
+                    return null;
                 }
 
                 return response.Data;
@@ -66,6 +67,29 @@ namespace GitlabNewIssueOutlookAddin {
             }
         }
 
+    }
+
+    public class GitlabIssue {
+        // https://docs.gitlab.com/ee/api/issues.html#new-issue
+        private int _id;
+        public int id {
+            get {
+                return _id;
+            }
+            set {
+                _id = value;
+            }
+        }
+        private String _web_url;
+        public String web_url {
+            get {
+                return _web_url;
+            }
+            set {
+                _web_url = value;
+            }
+        }
+        public GitlabIssue() { }
     }
 
     public class GitlabNewIssue {

@@ -14,7 +14,7 @@
     </tabs>
   </ribbon>
   <contextMenus>
-    <contextMenu idMso="ContextMenuMailItem">      
+    <contextMenu idMso="ContextMenuMailItem">
       <dynamicMenu id="GitlabNewIssueMenu"
                    label="Create Gitlab Issue"
                    getContent="PopulateMenu"></dynamicMenu>
