@@ -1,4 +1,4 @@
-# GitlabNewIssueOutlookAddin
+# Gitlab New Issue Outlook Addin
 
 Unfortunately Office 365 does not support email sub-addressing so Gitlab's new issue via email won't work.  
 See https://gitlab.com/gitlab-org/gitlab-ee/blob/v11.8.0-ee/doc/administration/incoming_email.md
