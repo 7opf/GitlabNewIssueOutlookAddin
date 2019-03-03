@@ -1,6 +1,7 @@
 ﻿using RestSharp;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
@@ -10,48 +11,29 @@ using System.Windows.Forms;
 namespace GitlabNewIssueOutlookAddin {
     public class GitlabApi {
 
-        RestClient rc;
-        private String url = "";
-        public String Url {
+        private RestClient rc;
+        public GitlabSimpleProject[] Projects { get; set; }
+        private bool configured;
+        public bool Configured {
             get {
-                return this.url;
-            }
-            set {
-                if (this.rc != null) {
-                    if (this.rc.BaseUrl.ToString() != value) {
-                        this.rc = new RestClient(value);
-                    }
-                } else {
-                    this.rc = new RestClient(value);
-                    this.rc.RemoveDefaultParameter("PRIVATE-TOKEN");
-                    this.rc.AddDefaultHeader("PRIVATE-TOKEN", this.token);
-                }
-                this.url = value;
+                return this.configured;
             }
         }
-        private String token = "";
-        public String Token {
-            get {
-                return this.token;
-            }
-            set {
-                if (this.rc != null) {
-                    this.rc.RemoveDefaultParameter("PRIVATE-TOKEN");
-                    this.rc.AddDefaultHeader("PRIVATE-TOKEN", value);
-                }
-                this.token = value;
-            }
-        }
-        public String[][] Parameters { get; set; }
 
-        public GitlabApi() {
+        public GitlabApi() { }
+
+        public void Configure() {
             System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
-            this.Parameters = new string[][] { };
 
-        }
+            // minimum requirements to be configured
+            if (String.IsNullOrEmpty(Properties.Settings.Default.Url) || String.IsNullOrEmpty(Properties.Settings.Default.Token)) {
+                this.configured = false;
+                return;
+            }
 
-        public bool isConfigured() {
-            return this.rc != null;
+            this.rc = new RestClient(Properties.Settings.Default.Url);
+            this.rc.AddDefaultHeader("PRIVATE-TOKEN", Properties.Settings.Default.Token);
+            this.configured = true;
         }
 
         public GitlabIssue newIssue(int projectId, GitlabNewIssue newIssue) {
@@ -59,31 +41,23 @@ namespace GitlabNewIssueOutlookAddin {
             req.AddParameter("projectId", projectId, ParameterType.UrlSegment);
             req.AddJsonBody(@newIssue);
 
-            try {
-                var response = rc.Post<GitlabIssue>(req);
-                Debug.WriteLine(response.Content);
+            var response = rc.Post<GitlabIssue>(req);
 
-                if (response.StatusCode != System.Net.HttpStatusCode.Created) {
-                    MessageBox.Show("Failed to create issue: " + response.Content);
-                    return null;
-                }
-
-                return response.Data;
-            } catch (Exception e) {
-                Debug.WriteLine(e);
-                MessageBox.Show(e.Message);
-                return null;
+            if (response.StatusCode != System.Net.HttpStatusCode.Created) {
+                throw new Exception("Failed to create issue: " + response.Content);
             }
 
+            return response.Data;
         }
 
-        public GitlabSimpleProject[] getProjects() {
+        public void fetchProjects() {
             RestRequest req = new RestRequest("projects");
 
             // user params
-            foreach (String[] param in this.Parameters) {
-                req.AddQueryParameter(param[0], param[1]);
-            }
+            req.AddQueryParameter("search", Properties.Settings.Default.Search);
+            req.AddQueryParameter("membership", Properties.Settings.Default.Membership ? "true" : "false");
+            req.AddQueryParameter("owned", Properties.Settings.Default.Owned ? "true" : "false");
+            req.AddQueryParameter("starred", Properties.Settings.Default.Starred ? "true" : "false");
 
             // default params
             req.AddQueryParameter("order_by", "name");
@@ -91,21 +65,13 @@ namespace GitlabNewIssueOutlookAddin {
             req.AddQueryParameter("simple", "true");
             req.AddQueryParameter("with_issues_enabled", "true");
 
-            try {
-                var response = rc.Get<List<GitlabSimpleProject>>(req);
-                Debug.WriteLine(response.Content);
+            var response = this.rc.Get<List<GitlabSimpleProject>>(req);
 
-                if (response.StatusCode != System.Net.HttpStatusCode.OK) {
-                    MessageBox.Show("Failed to fetch Gitlab project list: " + response.Content);
-                    return null;
-                }
-
-                return response.Data.ToArray();
-            } catch (Exception e) {
-                Debug.WriteLine(e);
-                MessageBox.Show(e.Message);
-                return null;
+            if (response.StatusCode != System.Net.HttpStatusCode.OK) {
+                throw new Exception("Failed to fetch Gitlab project list: " + response.Content);
             }
+
+            this.Projects = response.Data.ToArray();
         }
 
     }

@@ -8,7 +8,14 @@ using Office = Microsoft.Office.Core;
 
 namespace GitlabNewIssueOutlookAddin {
     public partial class ThisAddIn {
+
         private void ThisAddIn_Startup(object sender, System.EventArgs e) {
+            if (Properties.Settings.Default.UpgradeRequired) {
+                // https://stackoverflow.com/a/2698338/6683324
+                Properties.Settings.Default.Upgrade();
+                Properties.Settings.Default.UpgradeRequired = false;
+                Properties.Settings.Default.Save();
+            }
         }
 
         private void ThisAddIn_Shutdown(object sender, System.EventArgs e) {

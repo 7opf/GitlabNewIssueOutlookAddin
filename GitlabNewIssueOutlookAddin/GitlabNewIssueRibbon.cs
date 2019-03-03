@@ -35,12 +35,8 @@ namespace GitlabNewIssueOutlookAddin {
     public class GitlabNewIssueRibbon : Office.IRibbonExtensibility {
         private Office.IRibbonUI ribbon;
         private GitlabApi gitlabApi;
-        private GitlabSimpleProject[] projects;
-        private SettingsForm form;
 
-        public GitlabNewIssueRibbon() {
-
-        }
+        public GitlabNewIssueRibbon() { }
 
         #region IRibbonExtensibility Members
 
@@ -56,27 +52,27 @@ namespace GitlabNewIssueOutlookAddin {
         public void Ribbon_Load(Office.IRibbonUI ribbonUI) {
             this.ribbon = ribbonUI;
             this.gitlabApi = new GitlabApi();
+            try {
+                this.gitlabApi.Configure();
+                if (this.gitlabApi.Configured) {
+                    this.gitlabApi.fetchProjects();
+                }
+            } catch (Exception err) {
+                // ignore any errors onLoad
+                Debug.WriteLine(err);
+            }
         }
 
         public void OpenSettings(Office.IRibbonControl control) {
             SettingsForm form = new SettingsForm(this.gitlabApi);
             form.Show();
-            form.FormClosed += new FormClosedEventHandler(this.formClosed);
-        }
-
-        public void formClosed(object sender, FormClosedEventArgs e) {
-            if (this.gitlabApi.isConfigured()) {
-                this.projects = this.gitlabApi.getProjects();
-            }
         }
 
         public String PopulateMenu(Office.IRibbonControl control) {
-            Debug.WriteLine(GetMenuXML(this.projects));
-            return GetMenuXML(this.projects);
+            return GetMenuXML(this.gitlabApi.Projects);
         }
 
         public void SubmitIssue(Office.IRibbonControl control) {
-            Debug.WriteLine($"Clicked {control.Id}: {control.Tag}");
             Outlook.MailItem mail = null;
 
             if (control.Context is Outlook.Selection) {
@@ -99,10 +95,15 @@ namespace GitlabNewIssueOutlookAddin {
                 labels = "To Do"
             };
 
-            GitlabIssue createdIssue = this.gitlabApi.newIssue(Int32.Parse(control.Tag), issue);
-            DialogResult result = MessageBox.Show($"View on Gitlab?", "Issue Created", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (result == DialogResult.Yes) {
-                Process.Start(createdIssue.web_url);
+            try {
+                GitlabIssue createdIssue = this.gitlabApi.newIssue(Int32.Parse(control.Tag), issue);
+                DialogResult result = MessageBox.Show($"View on Gitlab?", "Issue Created", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+                if (result == DialogResult.Yes) {
+                    Process.Start(createdIssue.web_url);
+                }
+            } catch (Exception err) {
+                Debug.WriteLine(err);
+                MessageBox.Show(err.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 

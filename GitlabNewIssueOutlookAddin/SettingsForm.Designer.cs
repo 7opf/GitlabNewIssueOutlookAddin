@@ -242,7 +242,6 @@
             this.Controls.Add(this.tabControl1);
             this.Name = "SettingsForm";
             this.Text = "Gitlab Add-In Settings";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.SettingsForm_FormClosing);
             this.tabControl1.ResumeLayout(false);
             this.tabPage1.ResumeLayout(false);
             this.tabPage1.PerformLayout();
