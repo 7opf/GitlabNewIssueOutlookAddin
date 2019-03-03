@@ -11,11 +11,47 @@ namespace GitlabNewIssueOutlookAddin {
     public class GitlabApi {
 
         RestClient rc;
+        private String url = "";
+        public String Url {
+            get {
+                return this.url;
+            }
+            set {
+                if (this.rc != null) {
+                    if (this.rc.BaseUrl.ToString() != value) {
+                        this.rc = new RestClient(value);
+                    }
+                } else {
+                    this.rc = new RestClient(value);
+                    this.rc.RemoveDefaultParameter("PRIVATE-TOKEN");
+                    this.rc.AddDefaultHeader("PRIVATE-TOKEN", this.token);
+                }
+                this.url = value;
+            }
+        }
+        private String token = "";
+        public String Token {
+            get {
+                return this.token;
+            }
+            set {
+                if (this.rc != null) {
+                    this.rc.RemoveDefaultParameter("PRIVATE-TOKEN");
+                    this.rc.AddDefaultHeader("PRIVATE-TOKEN", value);
+                }
+                this.token = value;
+            }
+        }
+        public String[][] Parameters { get; set; }
 
         public GitlabApi() {
             System.Net.ServicePointManager.SecurityProtocol = System.Net.SecurityProtocolType.Tls12;
-            rc = new RestClient("https://gitlab.eps.surrey.ac.uk/api/v4");
-            rc.AddDefaultHeader("PRIVATE-TOKEN", "");
+            this.Parameters = new string[][] { };
+
+        }
+
+        public bool isConfigured() {
+            return this.rc != null;
         }
 
         public GitlabIssue newIssue(int projectId, GitlabNewIssue newIssue) {
@@ -41,13 +77,18 @@ namespace GitlabNewIssueOutlookAddin {
 
         }
 
-        public List<GitlabSimpleProject> getProjects() {
+        public GitlabSimpleProject[] getProjects() {
             RestRequest req = new RestRequest("projects");
+
+            // user params
+            foreach (String[] param in this.Parameters) {
+                req.AddQueryParameter(param[0], param[1]);
+            }
+
+            // default params
             req.AddQueryParameter("order_by", "name");
             req.AddQueryParameter("sort", "asc");
             req.AddQueryParameter("simple", "true");
-            req.AddQueryParameter("search", "tihm");
-            req.AddQueryParameter("membership", "true");
             req.AddQueryParameter("with_issues_enabled", "true");
 
             try {
@@ -59,7 +100,7 @@ namespace GitlabNewIssueOutlookAddin {
                     return null;
                 }
 
-                return response.Data;
+                return response.Data.ToArray();
             } catch (Exception e) {
                 Debug.WriteLine(e);
                 MessageBox.Show(e.Message);

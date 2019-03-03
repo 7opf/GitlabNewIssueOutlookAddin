@@ -36,6 +36,7 @@ namespace GitlabNewIssueOutlookAddin {
         private Office.IRibbonUI ribbon;
         private GitlabApi gitlabApi;
         private GitlabSimpleProject[] projects;
+        private SettingsForm form;
 
         public GitlabNewIssueRibbon() {
 
@@ -55,11 +56,18 @@ namespace GitlabNewIssueOutlookAddin {
         public void Ribbon_Load(Office.IRibbonUI ribbonUI) {
             this.ribbon = ribbonUI;
             this.gitlabApi = new GitlabApi();
-            this.projects = this.gitlabApi.getProjects().ToArray();
         }
 
         public void OpenSettings(Office.IRibbonControl control) {
+            SettingsForm form = new SettingsForm(this.gitlabApi);
+            form.Show();
+            form.FormClosed += new FormClosedEventHandler(this.formClosed);
+        }
 
+        public void formClosed(object sender, FormClosedEventArgs e) {
+            if (this.gitlabApi.isConfigured()) {
+                this.projects = this.gitlabApi.getProjects();
+            }
         }
 
         public String PopulateMenu(Office.IRibbonControl control) {
@@ -67,7 +75,7 @@ namespace GitlabNewIssueOutlookAddin {
             return GetMenuXML(this.projects);
         }
 
-        public void SubmitIssue(Office.IRibbonControl control) {        
+        public void SubmitIssue(Office.IRibbonControl control) {
             Debug.WriteLine($"Clicked {control.Id}: {control.Tag}");
             Outlook.MailItem mail = null;
 
@@ -119,7 +127,7 @@ namespace GitlabNewIssueOutlookAddin {
 
         public String GetMenuXML(GitlabSimpleProject[] projects) {
             if (projects == null) {
-                return @"<menu xmlns=""http://schemas.microsoft.com/office/2006/01/customui""><button id=""button1"" label=""No projects available"" disabled=""true"" /></menu>";
+                return @"<menu xmlns=""http://schemas.microsoft.com/office/2006/01/customui""><button id=""button1"" label=""No projects available"" enabled=""false"" /></menu>";
             }
             return $@"<menu xmlns=""http://schemas.microsoft.com/office/2006/01/customui"">{String.Join("", projects.Select(GetButtonXML))}</menu>";
         }
@@ -127,7 +135,7 @@ namespace GitlabNewIssueOutlookAddin {
         public String GetButtonXML(GitlabSimpleProject project) {
             return $@"<button id=""project{project.id}"" label=""{project.name_with_namespace}"" tag=""{project.id}"" onAction=""SubmitIssue"" />";
         }
-        
+
         #endregion
     }
 }
